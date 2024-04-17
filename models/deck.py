@@ -5,6 +5,7 @@ from .card import (
     JunkCard,
     SwitchCard
 )
+from .card_list import CardList
 from .constants import Month
 
 import random
@@ -12,14 +13,17 @@ import random
 class Deck(): 
     def __init__(self):
 
-        bright_cards = [BrightCard(month) for month in BrightCard.months]
-        animal_cards = [AnimalCard(month) for month in AnimalCard.months]
-        ribbon_cards = [RibbonCard(month) for month in RibbonCard.months]
-        junk_cards = [JunkCard(month, index) for month in Month if month.value < 11 for index in range(0,2)] + [JunkCard(Month.NOV, index=0), JunkCard(Month.NOV, index=1), JunkCard(Month.NOV, index=2, double=1)] + [JunkCard(Month.DEC, index=0, double=1)]
-        switch_cards = [SwitchCard(month) for month in SwitchCard.months]
+        bright_cards = CardList(BrightCard(month) for month in BrightCard.months)
+        animal_cards = CardList(AnimalCard(month) for month in AnimalCard.months)
+        ribbon_cards = CardList(RibbonCard(month) for month in RibbonCard.months)
+        junk_cards = CardList([JunkCard(month, index) for month in Month if month.value < 11 for index in range(0,2)] + 
+                              [JunkCard(Month.NOV, index=0), JunkCard(Month.NOV, index=1), JunkCard(Month.NOV, index=2, double=1)] + 
+                              [JunkCard(Month.DEC, index=0, double=1)])
+        switch_card = CardList(SwitchCard(month) for month in SwitchCard.month)
 
-        self.deck = bright_cards + animal_cards + ribbon_cards + junk_cards + switch_cards 
-        self.max_cards = len(self.deck)
+        self.deck = CardList(bright_cards + animal_cards + ribbon_cards + junk_cards + switch_card)
+        self.full_deck = self.deck.copy()
+        self.max_cards = len(self.full_deck)
         self.shuffle() 
 
     def shuffle(self): 
@@ -40,4 +44,9 @@ class Deck():
         player_two_hand = self.deck[10:20]
         open_cards = self.deck[20:28]
         del self.deck[:28]
-        return player_one_hand, player_two_hand, open_cards
+        return (CardList(sorted(player_one_hand)), 
+                CardList(sorted(player_two_hand)),
+                CardList(sorted(open_cards)))
+    
+    def sort(self):
+        self.deck.sort()

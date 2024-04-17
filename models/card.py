@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 from .constants import Month, Type
 from enum import Enum 
 
@@ -19,8 +18,13 @@ class Card(ABC):
             and object.type == self.type 
             and object.month == self.month
         )
-
     
+    def __lt__(self, obj):
+        assert isinstance(obj, Card)
+        return self._sort_value() < obj._sort_value()
+    
+    def _sort_value(self) -> int: 
+        return(self.month.value * 1000 + self.type.value * 100)
 
 class BrightCard(Card): 
     
@@ -97,14 +101,17 @@ class JunkCard(Card):
             super().__eq__(object)
             and object.index == self.index
         )
+    
+    def _sort_value(self) -> int:
+        return super()._sort_value() + self.index
 
 class SwitchCard(Card):
 
-    months = [Month.MAY, Month.SEP]
+    month = [Month.SEP]
 
     def __init__(self, month: Month, type: Type = Type.ANIMAL):
         assert type == Type.ANIMAL or type == Type.JUNK
-        assert month in self.months
+        assert month in self.month
         super().__init__(type=type, month=month)
         self.double = 1 
         self.index = 2 

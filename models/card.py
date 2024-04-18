@@ -19,6 +19,9 @@ class Card(ABC):
             and object.month == self.month
         )
     
+    def __hash__(self):
+        return hash((self.type, self.month))
+    
     def __lt__(self, obj):
         assert isinstance(obj, Card)
         return self._sort_value() < obj._sort_value()
@@ -39,7 +42,7 @@ class BrightCard(Card):
     
 class AnimalCard(Card): 
     
-    months = [Month.FEB, Month.APR, Month.JUN, Month.JUL, Month.AUG, Month.OCT, Month.DEC]
+    months = [Month.FEB, Month.APR, Month.MAY, Month.JUN, Month.JUL, Month.AUG, Month.OCT, Month.DEC]
 
     def __init__(self, month: Month):
         assert month in self.months

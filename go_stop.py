@@ -1,13 +1,13 @@
-from .models.board import Board
-from .models.flags import Flags
-from .models.card import Card
-from .models.card_list import CardList
-from.models.action import (Action,
+from models.board import Board
+from models.flags import Flags
+from models.card import Card
+from models.card_list import CardList
+from models.action import (Action,
                            ActionGo,
                            ActionSelectMatch,
                            ActionSelectMatches,
                            ActionThrow)
-from .models.player import Player
+from models.player import Player
 from typing import List, Union, Tuple, cast, Optional
 
 class GoStop():
@@ -33,7 +33,6 @@ class GoStop():
 
 
     def actions(self) -> List[Action]: 
-
         board = self.board 
         flags = self.flags
 
@@ -41,7 +40,6 @@ class GoStop():
 
         if self.terminal: 
             return []
-        
         if board.deck == []: 
             self.terminal = True 
             return []
@@ -60,10 +58,10 @@ class GoStop():
                 return [ActionSelectMatch(og_card, match) for match in matches]
             # Two match lists
             else: 
-                og_cards = Tuple(self.select_match[0], self.select_match[2])
+                og_cards = (self.select_match[0], self.select_match[2])
                 first_matches = self.select_match[1]
                 second_matches = self.select_match[3]
-                return [ActionSelectMatch(og_cards, Tuple(match_one, match_two)) for match_one in first_matches
+                return [ActionSelectMatches(og_cards, (match_one, match_two)) for match_one in first_matches
                         for match_two in second_matches]
                 
         # Otherwise, can throw card from hand 
@@ -73,7 +71,6 @@ class GoStop():
         
         board = self.board 
         flags = self.flags 
-        
         if action.kind == "go":
             action = cast(ActionGo, action)
 
@@ -81,6 +78,7 @@ class GoStop():
 
             if action.option: 
                 self._go()
+                return
 
             self._stop() 
             return 
@@ -90,12 +88,12 @@ class GoStop():
             self._throw_and_flip(action.card)
             return
         
-        if action.kind == "select_match":
+        if action.kind == "select match":
             action = cast(ActionSelectMatch, action)
             self._select_match(action.og_card, action.match)
             return 
         
-        if action.kind == "select_matches": 
+        if action.kind == "select matches": 
             action = cast(ActionSelectMatches, action)
             self._select_matches(action.og_cards, action.matches)
             return 
@@ -103,20 +101,20 @@ class GoStop():
     def _throw_and_flip(self, thrown_card: Card): 
         board = self.board 
         flags = self.flags 
-        center_cards = board.center_cards
 
         num_steal_junk = 0 
 
         # Remove card from player hand
         board.curr_player.hand.remove(thrown_card)
         # Add card into center 
-        self._append_to_center_field(CardList(thrown_card))
+        self._append_to_center_field(CardList([thrown_card]))
+        center_cards = board.center_cards
         matched_cards = center_cards[thrown_card.month]
 
         if len(matched_cards) == 4: 
             num_steal_junk += 1 
             center_cards[thrown_card.month] = CardList() # Clear center cards of that month 
-            board.curr_player.captured.extend(matched_cards + CardList[thrown_card])
+            board.curr_player.captured.extend(matched_cards + CardList([thrown_card]))
 
             num_steal_junk += self._flip()
         else: 
@@ -132,9 +130,10 @@ class GoStop():
 
         # Take Junk 
         opponent = board.get_opponent() 
-        board.curr_player.take_junk(opponent)
+        if num_steal_junk: 
+            for _ in range(num_steal_junk):
+                board.curr_player.take_junk(opponent)
         
-    
         # See if current player has racked enough points to Go 
         # Only do this if current player is not waiting to select a match 
         if not flags.select_match: 
@@ -163,12 +162,14 @@ class GoStop():
             if not flags.go: 
                 board.switch_turn()
         
-    def _flip(self, thrown_card: Optional[Card]): 
+    def _flip(self, thrown_card: Optional[Card] = None): 
         board = self.board 
         flags = self.flags 
         center_cards = board.center_cards
 
         num_steal_junk = 0 
+        thrown_match_select = False
+        flip_match_select = False
 
         flipped_card = board.deck.flip() 
         flip_matched_cards = board.center_cards[flipped_card.month]
@@ -179,16 +180,16 @@ class GoStop():
                 if len(flip_matched_cards) == 3: 
                     num_steal_junk += 1 
                     center_cards[flipped_card.month] = CardList() 
-                    board.curr_player.captured.extend(flip_matched_cards + CardList(flipped_card))
+                    board.curr_player.captured.extend(flip_matched_cards + CardList([flipped_card]))
                 elif len(flip_matched_cards) == 2: 
                     # ssa 
                     board.curr_player.num_ssa += 1 
-                    self._append_to_center_field(CardList(flipped_card))
+                    self._append_to_center_field(CardList([flipped_card]))
                 elif len(flip_matched_cards) == 1: 
                     # ghost 
                     num_steal_junk += 1 
                     center_cards[thrown_card.month].remove(thrown_card)
-                    board.curr_player.captured.extend(CardList(thrown_card, flipped_card))
+                    board.curr_player.captured.extend(CardList([thrown_card, flipped_card]))
                 # return here as everything is done
                 return num_steal_junk
             else: 
@@ -205,14 +206,14 @@ class GoStop():
         if len(flip_matched_cards) == 3: 
             num_steal_junk += 1 
             center_cards[flipped_card.month] = CardList() 
-            board.curr_player.extend(flip_matched_cards + CardList(flipped_card))
+            board.curr_player.captured.extend(flip_matched_cards + CardList([flipped_card]))
         elif len(flip_matched_cards) == 2: 
             flip_match_select = True 
         elif len(flip_matched_cards) == 1: 
             center_cards[flipped_card.month] = CardList() # Clear that suit 
-            board.curr_player.captured.extend(flip_matched_cards + CardList(flipped_card))
+            board.curr_player.captured.extend(flip_matched_cards + CardList([flipped_card]))
         else: 
-            self._append_to_center_field(CardList(flipped_card))
+            self._append_to_center_field(CardList([flipped_card]))
 
         # Handle Match Selects 
         if thrown_match_select and flip_match_select: 
@@ -234,12 +235,11 @@ class GoStop():
         flags = self.flags 
         center_cards = board.center_cards 
 
-        # Remove match and og_card from center
-        center_cards[og_card.month].remove(og_card)
+        # Remove match from center
         center_cards[match.month].remove(match)
 
         # Add to captured 
-        board.curr_player.capture.extend(CardList(og_card, match))
+        board.curr_player.captured.extend(CardList([og_card, match]))
 
         opponent = board.get_opponent()
         # Check For Go 
@@ -276,15 +276,12 @@ class GoStop():
         flags = self.flags 
         center_cards = board.center_cards 
 
-        # Remove match and og_card from center
-        for card in og_cards: 
-            center_cards[card.month].remove(card)
-        
+        # Remove match from center
         for card in matches: 
             center_cards[card.month].remove(card)
 
         # Add to captured 
-        board.curr_player.capture.extend(CardList(og_cards[0], og_cards[1], matches[0], matches[1]))
+        board.curr_player.captured.extend(CardList([og_cards[0], og_cards[1], matches[0], matches[1]]))
 
         # Check for Go 
         opponent = board.get_opponent()
@@ -322,7 +319,7 @@ class GoStop():
             if self.board.center_cards[card.month]:
                 self.board.center_cards[card.month].append(card)
             else: 
-                self.board.center_cards[card.month] = CardList(card)
+                self.board.center_cards[card.month] = CardList([card])
 
     def _go(self): 
         board = self.board
@@ -363,13 +360,13 @@ class GoStop():
                 winnings = winnings * pow(2, times_doubled)
             
             # Pi-bak 
-            if p1.junk_points > 0: 
-                if p2.num_junk < 6: 
+            if p1.junk_points() > 0: 
+                if p2.num_junk() < 6: 
                     winnings *= 2 
 
             # Guang-bak
-            if p1.bright_points > 0: 
-                if p2.num_bright == 0: 
+            if p1.bright_points() > 0: 
+                if p2.num_bright() == 0: 
                     winnings *= 2 
             
             return (winnings, -winnings)
@@ -388,13 +385,19 @@ class GoStop():
                 winnings = winnings * pow(2, times_doubled)
             
             # Pi-bak 
-            if p2.junk_points > 0: 
-                if p1.num_junk < 6: 
+            if p2.junk_points() > 0: 
+                if p1.num_junk() < 6: 
                     winnings *= 2 
 
             # Guang-bak
-            if p2.bright_points > 0: 
-                if p1.num_bright == 0: 
+            if p2.bright_points() > 0: 
+                if p1.num_bright() == 0: 
                     winnings *= 2 
             
             return (-winnings, winnings)
+
+    def display(self): 
+        print(self.board)
+
+
+

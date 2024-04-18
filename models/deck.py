@@ -23,8 +23,8 @@ class Deck():
 
         self.deck = CardList(bright_cards + animal_cards + ribbon_cards + junk_cards + switch_card)
         self.full_deck = self.deck.copy()
-        self.max_cards = len(self.full_deck)
-        self.shuffle() 
+
+
 
     def shuffle(self): 
         random.shuffle(self.deck)

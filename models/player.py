@@ -16,8 +16,17 @@ class Player():
         self.num_go = 0 
         self.num_ssa = 0 
     
+    def __str__(self):
+        return f"Player {self.number}\n" \
+                f"Hand: {self.hand}\n" \
+                f"Hand Length: {len(self.hand)}\n" \
+                f"Captured: {self.captured}\n" \
+                f"Score: {self.score}\n" \
+                f"Num_go: {self.num_go}"
         
-    def switch_card(card: Card, type: Type): 
+
+
+    def switch_card(self, card: Card, type: Type): 
         # Switch card to junk or animal
         assert isinstance(card, SwitchCard)
         card.switch_type(type)                
@@ -26,8 +35,8 @@ class Player():
     def take_junk(self, opponent):
         assert isinstance(opponent, Player)
         opponent_junk_cards = [card for card in opponent.captured if card.type == Type.JUNK]
-        if not opponent_junk_cards:
-            for card in enumerate(opponent_junk_cards): 
+        if opponent_junk_cards:
+            for card in opponent_junk_cards: 
                 if not card.double: # Give single point junk card 
                     self.captured.append(card)
                     opponent.captured.remove(card)
@@ -38,17 +47,17 @@ class Player():
         
     # Scoring Methods for Player 
     def update_score(self): 
-        switch_card = [(index, card) for index,card in enumerate(self.captured) if isinstance(card, SwitchCard)]
+        switch_card = [card for card in self.captured if isinstance(card, SwitchCard)]
         if switch_card: 
-            index, sw_card = switch_card
+            sw_card = switch_card[0]
             # Maximize for either type 
-            self.switch_card(self.captured[index], type=Type.ANIMAL)
+            self.switch_card(card=sw_card, type=Type.ANIMAL)
             animal_score = self.calculate_score()
-            self.switch_card(self.captured[index], type=Type.JUNK)
+            self.switch_card(card=sw_card, type=Type.JUNK)
             junk_score = self.calculate_score() 
 
             if junk_score < animal_score: 
-                self.switch_card(self.captured[index], type=Type.ANIMAL)
+                self.switch_card(card=sw_card, type=Type.ANIMAL)
                 self.score = animal_score
             else: 
                 self.score = junk_score
@@ -56,7 +65,7 @@ class Player():
             self.score = self.calculate_score()
 
     def calculate_score(self): 
-        return self.bright_points() + self.animal_points + self.ribbon_points + self.junk_points()
+        return self.bright_points() + self.animal_points() + self.ribbon_points() + self.junk_points()
     
     def bright_points(self): 
         bright_cards = [card for card in self.captured if card.type == Type.BRIGHT]
@@ -77,7 +86,9 @@ class Player():
             points += len(animal_cards) - 4 
 
         # Check for Godori 
-        if {AnimalCard(Month.FEB), AnimalCard(Month.APR), AnimalCard(Month.AUG)}.issubset(animal_cards):
+        godori_cards = [AnimalCard(Month.FEB), AnimalCard(Month.APR), AnimalCard(Month.AUG)]
+        godori = all(card in animal_cards for card in godori_cards)
+        if godori:
             points += 5 
         
         return points 
@@ -109,6 +120,7 @@ class Player():
     def junk_points(self): 
         total = 0 
         junk_cards = [card for card in self.captured if card.type == Type.JUNK]
+        points = 0
         for card in junk_cards: 
             total += card.double + 1 
         

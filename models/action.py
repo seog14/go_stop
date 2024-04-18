@@ -17,6 +17,9 @@ class Action(ABC):
 
     def __eq__(self, obj):
         return isinstance(obj, Action) and obj.kind == self.kind and obj.arg == self.arg 
+
+    def __str__(self): 
+        return f"Action: {self.kind} with args: {self.arg}"
     
 class ActionThrow(Action):
 

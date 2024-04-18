@@ -41,7 +41,6 @@ class Board():
                 curr_month = card.month
                 consecutive_months = 1 
             if consecutive_months == 4: 
-                print(cards)
                 return True         
             
         return False
@@ -51,4 +50,13 @@ class Board():
             return self.p2 
         else: 
             return self.p1
-        
+    
+    def __str__(self):
+        result = f"curr player: {self.curr_player}\n"
+        result += f"opp player: {self.get_opponent()}\n"
+        for month, cards in self.center_cards.items(): 
+            result += f"{month.name}:"
+            for card in cards: 
+                result += f" {card}"
+            result += " "
+        return result

@@ -12,6 +12,34 @@ class Card(ABC):
     def __str__(self):
         pass
 
+    @abstractmethod
+    def serialize(self): 
+        pass
+    
+    @staticmethod
+    def deserialize(serialized_card: str): 
+        if serialized_card[0] == 'B':
+            month = int(serialized_card[1:])
+            return BrightCard(month=Month(month))
+        if serialized_card[0] == 'A': 
+            month = int(serialized_card[1:])
+            return AnimalCard(month=Month(month))
+        if serialized_card[0] == 'R': 
+            month = int(serialized_card[1:])
+            return RibbonCard(month=Month(month))
+        if serialized_card[0] == 'J': 
+            month = int(serialized_card[1:3])
+            index = int(serialized_card[3])
+            double = int(serialized_card[4])
+            return JunkCard(month=Month(month), index=index, double=double)
+        if serialized_card[0] == 'S': 
+            month = int(serialized_card[1:3])
+            type = serialized_card[3]
+            if type == 'A': 
+                return SwitchCard(month=Month(month), type=Type.ANIMAL)
+            if type == 'J': 
+                return SwitchCard(month=Month(month), type=Type.JUNK)
+
     def __eq__(self, object) -> bool:
         return (
             isinstance(object, Card)
@@ -40,6 +68,9 @@ class BrightCard(Card):
     def __str__(self):
         return f"Bright: {self.month.name}"
     
+    def serialize(self):
+        return "B{:02d}".format(self.month.value)
+        
 class AnimalCard(Card): 
     
     months = [Month.FEB, Month.APR, Month.MAY, Month.JUN, Month.JUL, Month.AUG, Month.OCT, Month.DEC]
@@ -50,6 +81,9 @@ class AnimalCard(Card):
 
     def __str__(self):
         return f"Animal: {self.month.name}"
+    
+    def serialize(self):
+        return "A{:02d}".format(self.month.value)
 
 class RibbonCard(Card):
     
@@ -75,6 +109,9 @@ class RibbonCard(Card):
     
     def __str__(self):
         return f"Ribbon: {self.month.name} {self.flag.name}"
+    
+    def serialize(self):
+        return "R{:02d}".format(self.month.value)
         
 
 class JunkCard(Card):
@@ -108,6 +145,9 @@ class JunkCard(Card):
     def _sort_value(self) -> int:
         return super()._sort_value() + self.index
 
+    def serialize(self):
+        return "J{:02d}{}{}".format(self.month.value ,self.index, self.double)
+
 class SwitchCard(Card):
 
     month = [Month.SEP]
@@ -138,3 +178,10 @@ class SwitchCard(Card):
             super().__eq__(object)
             and object.index == self.index
         )
+    
+    def serialize(self):
+        if self.type == Type.ANIMAL: 
+            type = "A"
+        elif self.type == Type.JUNK: 
+            type = "J"
+        return "S{:02d}{}".format(self.month.value, type)

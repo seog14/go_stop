@@ -11,7 +11,7 @@ from .constants import Month
 import random
 
 class Deck(): 
-    def __init__(self):
+    def __init__(self, deck: CardList = None):
 
         bright_cards = CardList(BrightCard(month) for month in BrightCard.months)
         animal_cards = CardList(AnimalCard(month) for month in AnimalCard.months)
@@ -21,10 +21,11 @@ class Deck():
                               [JunkCard(Month.DEC, index=0, double=1)])
         switch_card = CardList(SwitchCard(month) for month in SwitchCard.month)
 
-        self.deck = CardList(bright_cards + animal_cards + ribbon_cards + junk_cards + switch_card)
-        self.full_deck = self.deck.copy()
-
-
+        self.full_deck = CardList(bright_cards + animal_cards + ribbon_cards + junk_cards + switch_card)
+        if not deck: 
+            self.deck = CardList(bright_cards + animal_cards + ribbon_cards + junk_cards + switch_card)
+        else: 
+            self.deck = deck
 
     def shuffle(self): 
         random.shuffle(self.deck)
@@ -50,3 +51,14 @@ class Deck():
     
     def sort(self):
         self.deck.sort()
+
+    def serialize(self) -> list: 
+        self.deck.sort()
+        return CardList.serialize(self.deck)
+
+    @staticmethod
+    def deserialize(serialized_deck): 
+        deck = CardList.deserialize(serialized_cardList=serialized_deck)
+        deck.sort()
+        return Deck(deck)
+    

@@ -23,8 +23,33 @@ class Player():
                 f"Captured: {self.captured}\n" \
                 f"Score: {self.score}\n" \
                 f"Num_go: {self.num_go}"
+    
+    def serialize(self): 
+        self.sort()
+        return {
+            "number": self.number, 
+            "hand": self.hand.serialize(), 
+            "captured": self.captured.serialize(), 
+            "score": self.score, 
+            "num_go": self.num_go
+        }
+    
+    @staticmethod
+    def deserialize(serialized_player: dict): 
+        number = int(serialized_player["number"])
+        hand = CardList.deserialize(serialized_player["hand"])
+        player = Player(hand, number)
         
+        player.captured = CardList.deserialize(serialized_player["captured"])
+        player.score = int(serialized_player["score"])
+        player.num_go = int(serialized_player["num_go"])
+        player.sort()
 
+        return player
+
+    def sort(self): 
+        self.hand.sort() 
+        self.captured.sort()
 
     def switch_card(self, card: Card, type: Type): 
         # Switch card to junk or animal

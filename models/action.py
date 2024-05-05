@@ -1,6 +1,7 @@
 from .card import Card 
+from card_list import CardList
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Literal, Tuple
 
 Kind = Literal[
@@ -21,11 +22,46 @@ class Action(ABC):
     def __str__(self): 
         return f"Action: {self.kind} with args: {self.arg}"
     
+    @abstractmethod
+    def serialize(self): 
+        pass
+
+    @staticmethod
+    def deserialize(serialized_action: dict): 
+        kind = serialized_action["kind"]
+
+        if kind == "throw": 
+            card = serialized_action["card"]
+            return ActionThrow(card=Card.deserialize(card))
+        
+        if kind == "select match": 
+            og_card = serialized_action["og_card"]
+            match = serialized_action["match"]
+            return ActionSelectMatch(og_card=Card.serialize(og_card),
+                                     match=Card.deserialize(match))
+        
+        if kind == "select matches": 
+            og_cards = CardList.deserialize(serialized_action["og_cards"])
+            matches = CardList.deserialize(serialized_action["matches"])
+            # Change Cardlist to tuple 
+            return ActionSelectMatches(og_cards=tuple(og_cards),
+                                       matches=tuple(matches)) 
+        
+        if kind == "go": 
+            option = bool(serialized_action["option"])
+            return ActionGo(option=option)
+
 class ActionThrow(Action):
 
     def __init__(self, card: Card): 
         super().__init__("throw", card)
         self.card = card
+
+    def serialize(self): 
+        return { 
+            "kind": self.kind, 
+            "card": self.card.serialize()
+        }
 
 # One Match List
 class ActionSelectMatch(Action): 
@@ -35,15 +71,39 @@ class ActionSelectMatch(Action):
         self.og_card = og_card
         self.match = match 
 
+    def serialize(self): 
+        return {
+            "kind": self.kind, 
+            "og_card": self.og_card.serialize(),
+            "match": self.match.serialize()
+        }
+
 # Two Match Lists 
 class ActionSelectMatches(Action): 
     def __init__(self, og_cards: Tuple[Card], matches: Tuple[Card]): 
         super().__init__("select matches", (og_cards, matches))
         self.og_cards = og_cards
         self.matches = matches
+    
+    def serialize(self): 
+        og_cards = CardList(self.og_cards)
+        og_cards.sort()
+        matches = CardList(self.matches)
+        matches.sort()
+        return{
+            "kind": self.kind, 
+            "og_cards": tuple(og_cards.serialize()),
+            "matches": tuple(matches.serialize())
+        }
 
 class ActionGo(Action): 
 
     def __init__(self, option: bool): 
         super().__init__("go", option)
         self.option = option 
+    
+    def serialize(self): 
+        return{
+            "kind": self.kind, 
+            "option": self.option
+        }

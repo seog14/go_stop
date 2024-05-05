@@ -30,6 +30,7 @@ class GoStop():
         self.terminal = False
         self.curr_go_score = 0 
         self.winner = Union[None, Player] 
+        self.history = List[Action]
 
 
     def actions(self) -> List[Action]: 

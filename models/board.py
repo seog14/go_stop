@@ -60,3 +60,52 @@ class Board():
                 result += f" {card}"
             result += " "
         return result
+    
+    def sort(self): 
+        self.p1.sort() 
+        self.p2.sort()
+        
+    
+    def serialize(self) -> dict: 
+        self.sort()
+        return {
+            
+            "deck": self.deck.serialize(),
+            "p1": Player.serialize(self.p1), 
+            "p2": Player.serialize(self.p2), 
+            "center_cards": dict(
+                (int(month.value), self.center_cards[month].serialize())
+                for month in Month 
+                if self.center_cards[month] != []
+            ),
+            "curr_player": self.curr_player.number
+    
+        }
+    
+    @staticmethod
+    def deserialize(serialized_board): 
+
+        board = Board()
+
+        board.deck = Deck.deserialize(serialized_board["deck"])
+        board.p1 = Player.deserialize(serialized_board["p1"])
+        board.p2 = Player.deserialize(serialized_board["p2"])
+        
+        center_cards = serialized_board["center_cards"]
+
+        board.center_cards = dict(
+            (
+                month, 
+                CardList.deserialize(center_cards[month])
+                if month.value in center_cards
+                else CardList([])
+            )
+            for month in Month
+        )
+
+        if serialized_board["curr_player"] == 1: 
+            board.curr_player = board.p1 
+        else: 
+            board.curr_player = board.p2
+        
+        return board.sort() 

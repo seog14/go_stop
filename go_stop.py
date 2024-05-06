@@ -6,7 +6,8 @@ from models.action import (Action,
                            ActionGo,
                            ActionSelectMatch,
                            ActionSelectMatches,
-                           ActionThrow)
+                           ActionThrow, 
+                           ActionFlip)
 from models.player import Player
 from typing import List, Union, Tuple, cast, Optional
 
@@ -29,8 +30,8 @@ class GoStop():
         ] = None
         self.terminal = False
         self.curr_go_score = 0 
-        self.winner = Union[None, Player] 
-        self.history = List[Action]
+        self.winner: Union[None, int] = None
+        self.history : List[Action] = []
 
 
     def actions(self) -> List[Action]: 
@@ -69,7 +70,7 @@ class GoStop():
         return [ActionThrow(card) for card in board.curr_player.hand]
     
     def play(self, action: Action): 
-        
+        self.history.append(action)
         board = self.board 
         flags = self.flags 
         if action.kind == "go":
@@ -137,7 +138,7 @@ class GoStop():
         
         # See if current player has racked enough points to Go 
         # Only do this if current player is not waiting to select a match 
-        if not flags.select_match: 
+        if not flags.select_match and len(board.curr_player.hand) != 0: 
             if board.curr_player.num_go == 0: 
                 board.curr_player.update_score() 
                 score = board.curr_player.score 
@@ -145,7 +146,7 @@ class GoStop():
                     # Check to see if opponent has already go'd 
                     if opponent.num_go > 0: 
                         self.terminal = True 
-                        self.winner = board.curr_player
+                        self.winner = board.curr_player.number
                         return 
                     flags.go = True 
             else: 
@@ -155,7 +156,7 @@ class GoStop():
                 if new_score > old_score: 
                     if not board.curr_player.hand: 
                         self.terminal = True 
-                        self.winner = board.curr_player
+                        self.winner = board.curr_player.number
                         return 
                     flags.go = True 
             
@@ -174,6 +175,10 @@ class GoStop():
 
         flipped_card = board.deck.flip() 
         flip_matched_cards = board.center_cards[flipped_card.month]
+
+        # Add to action history
+        action_flip = ActionFlip(card=flipped_card)
+        self.history.append(action_flip)
 
         if thrown_card: 
             if flipped_card.month == thrown_card.month: 
@@ -244,26 +249,27 @@ class GoStop():
 
         opponent = board.get_opponent()
         # Check For Go 
-        if board.curr_player.num_go == 0: 
-            board.curr_player.update_score() 
-            score = board.curr_player.score 
-            if score >= 7: 
-                if opponent.num_go > 0: 
-                    self.terminal = True 
-                    self.winner = board.curr_player
-                    return 
-                flags.go = True 
-        else: 
-            old_score = board.curr_player.score 
-            board.curr_player.update_score() 
-            new_score = board.curr_player.score 
-            # If this is the last turn, no cards in hand determines winner
-            if new_score > old_score: 
-                if not board.curr_player.hand: 
-                    self.terminal = True 
-                    self.winner = board.curr_player
-                    return 
-                flags.go = True 
+        if len(board.curr_player.hand) != 0:
+            if board.curr_player.num_go == 0: 
+                board.curr_player.update_score() 
+                score = board.curr_player.score 
+                if score >= 7: 
+                    if opponent.num_go > 0: 
+                        self.terminal = True 
+                        self.winner = board.curr_player.number
+                        return 
+                    flags.go = True 
+            else: 
+                old_score = board.curr_player.score 
+                board.curr_player.update_score() 
+                new_score = board.curr_player.score 
+                # If this is the last turn, no cards in hand determines winner
+                if new_score > old_score: 
+                    if not board.curr_player.hand: 
+                        self.terminal = True 
+                        self.winner = board.curr_player.number
+                        return 
+                    flags.go = True 
         
         # Switch turns if cannot go 
         if not flags.go: 
@@ -286,26 +292,26 @@ class GoStop():
 
         # Check for Go 
         opponent = board.get_opponent()
-
-        if board.curr_player.num_go == 0: 
-            board.curr_player.update_score() 
-            score = board.curr_player.score 
-            if score >= 7: 
-                if opponent.num_go > 0: 
-                    self.terminal = True 
-                    self.winner = board.curr_player
-                    return 
-                flags.go = True 
-        else: 
-            old_score = board.curr_player.score 
-            board.curr_player.update_score() 
-            new_score = board.curr_player.score 
-            if new_score > old_score: 
-                if not board.curr_player.hand: 
-                    self.terminal = True 
-                    self.winner = board.curr_player
-                    return 
-                flags.go = True 
+        if len(board.curr_player.hand) != 0:
+            if board.curr_player.num_go == 0: 
+                board.curr_player.update_score() 
+                score = board.curr_player.score 
+                if score >= 7: 
+                    if opponent.num_go > 0: 
+                        self.terminal = True 
+                        self.winner = board.curr_player.number
+                        return 
+                    flags.go = True 
+            else: 
+                old_score = board.curr_player.score 
+                board.curr_player.update_score() 
+                new_score = board.curr_player.score 
+                if new_score > old_score: 
+                    if not board.curr_player.hand: 
+                        self.terminal = True 
+                        self.winner = board.curr_player.number
+                        return 
+                    flags.go = True 
 
          # Switch turns if cannot go 
         if not flags.go: 
@@ -337,16 +343,15 @@ class GoStop():
         board = self.board
 
         self.terminal = True 
-        self.winner = board.curr_player
-
-        self.winner.update_score() 
+        self.winner = board.curr_player.number
+        board.curr_player.update_score()
 
         return 
     
     def calculate_winnings(self): 
         if not self.winner: 
             return (0, 0)
-        if self.winner == self.board.p1: 
+        if self.winner == 1: 
             p1 = self.board.p1 
             p2 = self.board.p2
             p1.update_score()
@@ -396,9 +401,94 @@ class GoStop():
                     winnings *= 2 
             
             return (-winnings, winnings)
+        
+    def get_utility(self): 
+        player_one_utility, player_two_utility = self.calculate_winnings() 
+        if self.winner == 1:
+            return player_one_utility
+        if self.winner == 2: 
+            return player_two_utility
 
     def display(self): 
         print(self.board)
 
 
+    def serialize(self): 
+        # preprocess history  
+        serialized_history = tuple([action.serialize() for action in self.history])
+        # preprocess select_match
+        serialized_select_match = None
+        if self.select_match: 
+            if len(self.select_match) == 2: 
 
+                card_thrown_or_flipped = self.select_match[0]
+                serialized_card_thrown_or_flipped = card_thrown_or_flipped.serialize()
+
+                matches = self.select_match[1]
+                serialized_matches = matches.serialize()
+
+                serialized_select_match = tuple((serialized_card_thrown_or_flipped, serialized_matches))
+
+            if len(self.select_match) == 4: 
+
+                card_thrown = self.select_match[0]
+                serialized_card_thrown = card_thrown.serialize()
+
+                thrown_matches = self.select_match[1]
+                serialized_thrown_matches = thrown_matches.serialize()
+
+                card_flipped = self.select_match[2]
+                serialized_card_flipped = card_flipped.serialize()
+
+                flipped_matches = self.select_match[3]
+                serialized_flipped_matches = flipped_matches.serialize() 
+
+                serialized_select_match = tuple((serialized_card_thrown, 
+                                                 serialized_thrown_matches, 
+                                                 serialized_card_flipped, 
+                                                 serialized_flipped_matches))
+        return tuple((
+            ("board", self.board.serialize()),
+            ("flags", self.flags.serialize()), 
+            ("select_match", serialized_select_match),
+            ("terminal", self.terminal),
+            ("curr_go_score", self.curr_go_score), 
+            ("winner", self.winner), 
+            ("history", serialized_history)
+        ))
+        
+    @staticmethod
+    def deserialize(serialized_game: tuple): 
+        game = GoStop()
+
+        # Deserialize select_match
+        serialized_select_match = serialized_game[2][1]
+        
+        select_match = None
+        if serialized_select_match:
+            if len(serialized_select_match) == 2: 
+                deserialized_card_thrown_flipped = Card.deserialize(serialized_select_match[0])
+                deserialized_matches = CardList.deserialize(serialized_select_match[1])
+                select_match = tuple((deserialized_card_thrown_flipped, deserialized_matches))
+            if len(serialized_select_match) == 4: 
+                deserialized_card_thrown = Card.deserialize(serialized_select_match[0])
+                deserialized_thrown_matches = CardList.deserialize(serialized_select_match[1])
+                deserialized_card_flipped = Card.deserialize(serialized_select_match[2])
+                deserialized_flipped_matches = CardList.deserialize(serialized_select_match[3])
+                select_match = tuple((deserialized_card_thrown, deserialized_thrown_matches,
+                                    deserialized_card_flipped, deserialized_flipped_matches))
+
+
+        # Deserialize history 
+        serialized_history = serialized_game[6][1]
+        history = [Action.deserialize(action) for action in serialized_history]
+
+        game.board = Board.deserialize(serialized_game[0][1])
+        game.flags = Flags.deserialize(serialized_game[1][1])
+        game.select_match = select_match
+        game.terminal = serialized_game[3][1]
+        game.curr_go_score = serialized_game[4][1]
+        game.winner = serialized_game[5][1]
+        game.history = history
+
+        return game

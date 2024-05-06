@@ -17,32 +17,41 @@ class Player():
         self.num_ssa = 0 
     
     def __str__(self):
+        # Sort Captured into groups 
+        captured = self.captured.copy() 
+        junk_captured = captured.filter(lambda card: card.type == Type.JUNK)
+        ribbon_captured = captured.filter(lambda card: card.type == Type.RIBBON)
+        animal_captured = captured.filter(lambda card: card.type == Type.ANIMAL)
+        bright_captured = captured.filter(lambda card: card.type == Type.BRIGHT)
         return f"Player {self.number}\n" \
                 f"Hand: {self.hand}\n" \
                 f"Hand Length: {len(self.hand)}\n" \
-                f"Captured: {self.captured}\n" \
+                f"Junk Captured: {junk_captured}\n" \
+                f"Ribbon Captured: {ribbon_captured}\n" \
+                f"Animal Captured: {animal_captured}\n" \
+                f"Bright Captured: {bright_captured}\n" \
                 f"Score: {self.score}\n" \
                 f"Num_go: {self.num_go}"
     
-    def serialize(self): 
+    def serialize(self) -> tuple: 
         self.sort()
-        return {
-            "number": self.number, 
-            "hand": self.hand.serialize(), 
-            "captured": self.captured.serialize(), 
-            "score": self.score, 
-            "num_go": self.num_go
-        }
-    
+        return tuple([
+            ("number", self.number), 
+            ("hand", self.hand.serialize()),
+            ("captured", self.captured.serialize()), 
+            ("score", self.score), 
+            ("num_go", self.num_go)
+        ])
+
     @staticmethod
-    def deserialize(serialized_player: dict): 
-        number = int(serialized_player["number"])
-        hand = CardList.deserialize(serialized_player["hand"])
+    def deserialize(serialized_player: tuple): 
+        number = int(serialized_player[0][1])
+        hand = CardList.deserialize(serialized_player[1][1])
         player = Player(hand, number)
         
-        player.captured = CardList.deserialize(serialized_player["captured"])
-        player.score = int(serialized_player["score"])
-        player.num_go = int(serialized_player["num_go"])
+        player.captured = CardList.deserialize(serialized_player[2][1])
+        player.score = int(serialized_player[3][1])
+        player.num_go = int(serialized_player[4][1])
         player.sort()
 
         return player

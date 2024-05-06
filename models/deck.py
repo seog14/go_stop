@@ -22,6 +22,7 @@ class Deck():
         switch_card = CardList(SwitchCard(month) for month in SwitchCard.month)
 
         self.full_deck = CardList(bright_cards + animal_cards + ribbon_cards + junk_cards + switch_card)
+        self.max_cards = 48
         if not deck: 
             self.deck = CardList(bright_cards + animal_cards + ribbon_cards + junk_cards + switch_card)
         else: 

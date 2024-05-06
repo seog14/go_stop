@@ -1,5 +1,5 @@
 from .card import Card 
-from card_list import CardList
+from .card_list import CardList
 
 from abc import ABC, abstractmethod
 from typing import Literal, Tuple
@@ -8,7 +8,8 @@ Kind = Literal[
     "throw",
     "go",
     "select match", 
-    "select matches"
+    "select matches",
+    "flip"
 ]
 
 class Action(ABC):
@@ -28,29 +29,33 @@ class Action(ABC):
 
     @staticmethod
     def deserialize(serialized_action: dict): 
-        kind = serialized_action["kind"]
+        kind = serialized_action[0][1]
 
         if kind == "throw": 
-            card = serialized_action["card"]
+            card = serialized_action[1][1]
             return ActionThrow(card=Card.deserialize(card))
         
         if kind == "select match": 
-            og_card = serialized_action["og_card"]
-            match = serialized_action["match"]
-            return ActionSelectMatch(og_card=Card.serialize(og_card),
+            og_card = serialized_action[1][1]
+            match = serialized_action[2][1]
+            return ActionSelectMatch(og_card=Card.deserialize(og_card),
                                      match=Card.deserialize(match))
         
         if kind == "select matches": 
-            og_cards = CardList.deserialize(serialized_action["og_cards"])
-            matches = CardList.deserialize(serialized_action["matches"])
+            og_cards = CardList.deserialize(serialized_action[1][1])
+            matches = CardList.deserialize(serialized_action[2][1])
             # Change Cardlist to tuple 
             return ActionSelectMatches(og_cards=tuple(og_cards),
                                        matches=tuple(matches)) 
         
         if kind == "go": 
-            option = bool(serialized_action["option"])
+            option = bool(serialized_action[1][1])
             return ActionGo(option=option)
 
+        if kind == "flip": 
+            card = serialized_action[1][1]
+            return ActionFlip(card=Card.deserialize(card))
+        
 class ActionThrow(Action):
 
     def __init__(self, card: Card): 
@@ -58,10 +63,10 @@ class ActionThrow(Action):
         self.card = card
 
     def serialize(self): 
-        return { 
-            "kind": self.kind, 
-            "card": self.card.serialize()
-        }
+        return tuple([
+            ("kind", self.kind),
+            ("card", self.card.serialize())
+        ])
 
 # One Match List
 class ActionSelectMatch(Action): 
@@ -72,11 +77,11 @@ class ActionSelectMatch(Action):
         self.match = match 
 
     def serialize(self): 
-        return {
-            "kind": self.kind, 
-            "og_card": self.og_card.serialize(),
-            "match": self.match.serialize()
-        }
+        return tuple([
+            ("kind", self.kind), 
+            ("og_card", self.og_card.serialize()),
+            ("match", self.match.serialize())
+        ])
 
 # Two Match Lists 
 class ActionSelectMatches(Action): 
@@ -90,11 +95,11 @@ class ActionSelectMatches(Action):
         og_cards.sort()
         matches = CardList(self.matches)
         matches.sort()
-        return{
-            "kind": self.kind, 
-            "og_cards": tuple(og_cards.serialize()),
-            "matches": tuple(matches.serialize())
-        }
+        return tuple([
+            ("kind", self.kind), 
+            ("og_cards", tuple(og_cards.serialize())),
+            ("matches", tuple(matches.serialize()))
+        ])
 
 class ActionGo(Action): 
 
@@ -103,7 +108,18 @@ class ActionGo(Action):
         self.option = option 
     
     def serialize(self): 
-        return{
-            "kind": self.kind, 
-            "option": self.option
-        }
+        return tuple([
+            ("kind", self.kind), 
+            ("option", self.option)
+        ])
+    
+class ActionFlip(Action):
+    def __init__(self, card: Card): 
+        super().__init__("flip", card)
+        self.card = card 
+    
+    def serialize(self): 
+        return tuple([
+            ("kind", self.kind), 
+            ("card", self.card.serialize())
+        ])

@@ -14,10 +14,13 @@ class CardList(list):
     def filter(self, predicate: Callable[[Card], bool]):
         """Apply the filter `predicate`."""
         return CardList(card for card in self if predicate(card))
-       
+    
+    def copy(self):
+        return CardList(self)
+        
     def serialize(self): 
         self.sort()
-        return [card.serialize() for card in self]
+        return tuple([card.serialize() for card in self])
     
     @staticmethod
     def deserialize(serialized_cardList): 

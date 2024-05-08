@@ -9,6 +9,7 @@ from .card_list import CardList
 from .constants import Month
 
 import random
+import copy
 
 class Deck(): 
     def __init__(self, deck: CardList = None):
@@ -50,6 +51,26 @@ class Deck():
                 CardList(sorted(player_two_hand)),
                 CardList(sorted(open_cards)))
     
+    def specified_deal(self, num_playerOne_cards, num_playerTwo_cards, num_center_cards): 
+        while True:
+            copy_deck = self.deck.copy()
+            random.shuffle(copy_deck)
+            num_cards = 0 
+            player_one_hand = copy_deck[:num_cards + num_playerOne_cards]
+            num_cards += num_playerOne_cards
+            player_two_hand = copy_deck[num_cards:num_cards + num_playerTwo_cards]
+            num_cards += num_playerTwo_cards
+            center_cards = copy_deck[num_cards: num_cards + num_center_cards]
+            num_cards += num_center_cards
+            del copy_deck[:num_cards]
+            if center_cards[0].month != center_cards[1].month:
+                break
+        
+        self.deck = copy_deck
+        return (CardList(sorted(player_one_hand)), 
+                CardList(sorted(player_two_hand)), 
+                CardList(sorted(center_cards)))
+
     def sort(self):
         self.deck.sort()
 

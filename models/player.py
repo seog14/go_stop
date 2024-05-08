@@ -36,25 +36,33 @@ class Player():
     def serialize(self) -> tuple: 
         self.sort()
         return tuple([
-            ("number", self.number), 
-            ("hand", self.hand.serialize()),
-            ("captured", self.captured.serialize()), 
-            ("score", self.score), 
-            ("num_go", self.num_go)
+            self.number, 
+            self.hand.serialize(),
+            self.captured.serialize(), 
+            self.score, 
+            self.num_go
         ])
 
     @staticmethod
     def deserialize(serialized_player: tuple): 
-        number = int(serialized_player[0][1])
-        hand = CardList.deserialize(serialized_player[1][1])
+        number = int(serialized_player[0])
+        hand = CardList.deserialize(serialized_player[1])
         player = Player(hand, number)
         
-        player.captured = CardList.deserialize(serialized_player[2][1])
-        player.score = int(serialized_player[3][1])
-        player.num_go = int(serialized_player[4][1])
+        player.captured = CardList.deserialize(serialized_player[2])
+        player.score = int(serialized_player[3])
+        player.num_go = int(serialized_player[4])
         player.sort()
 
         return player
+    
+    def get_hidden_information(self) -> tuple: 
+        return tuple((
+            self.number, 
+            self.captured.serialize(), 
+            self.score, 
+            self.num_go
+        ))
 
     def sort(self): 
         self.hand.sort() 

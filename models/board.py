@@ -24,6 +24,11 @@ class Board():
             self.curr_player = self.p2
         else: 
             self.curr_player = self.p1
+    
+    def clear_center_cards(self): 
+        self.center_cards = dict(
+            (month, CardList()) for month in Month
+        )
 
     def reset(self, player_one_hand, player_two_hand, center_cards):
         # Either player has 4 of same month or the center cards have 4 of same month
@@ -54,11 +59,13 @@ class Board():
     def __str__(self):
         result = f"curr player: {self.curr_player}\n"
         result += f"opp player: {self.get_opponent()}\n"
+        result += "centercards: \n"
         for month, cards in self.center_cards.items(): 
             result += f"{month.name}:"
             for card in cards: 
                 result += f" {card}"
-            result += " "
+            result += " \n"
+
         return result
     
     def sort(self): 
@@ -70,34 +77,93 @@ class Board():
         self.sort()
         return tuple((
             
-            ("deck", self.deck.serialize()),
-            ("p1", self.p1.serialize()), 
-            ("p2", self.p2.serialize()), 
-            ("center_cards", tuple([
+            self.deck.serialize(),
+            self.p1.serialize(), 
+            self.p2.serialize(), 
+            tuple([
                 (int(month.value), self.center_cards[month].serialize())
                 for month in Month 
                 if self.center_cards[month] != []
-            ])),
-            ("curr_player", self.curr_player.number)
+            ]),
+            self.curr_player.number
         ))
     
     @staticmethod
     def deserialize(serialized_board): 
 
         board = Board()
+        board.clear_center_cards()
 
-        board.deck = Deck.deserialize(serialized_board[0][1])
-        board.p1 = Player.deserialize(serialized_board[1][1])
-        board.p2 = Player.deserialize(serialized_board[2][1])
+        board.deck = Deck.deserialize(serialized_board[0])
+        board.p1 = Player.deserialize(serialized_board[1])
+        board.p2 = Player.deserialize(serialized_board[2])
         
-        center_cards = serialized_board[3][1]
+        center_cards = serialized_board[3]
 
         for month, cardList in center_cards: 
             board.center_cards[Month(month)] = CardList.deserialize(cardList)
 
-        if serialized_board[4][1] == 1: 
+        if serialized_board[4] == 1: 
             board.curr_player = board.p1 
         else: 
             board.curr_player = board.p2
         board.sort()
         return board
+    
+    def get_hidden_information(self, player_num): 
+        if player_num == 1: 
+            return tuple((
+                self.p1.serialize(), 
+                self.p2.get_hidden_information(), 
+                tuple([
+                    (int(month.value), self.center_cards[month].serialize())
+                    for month in Month 
+                    if self.center_cards[month] != []
+                ]),
+                self.curr_player.number
+            ))
+        if player_num == 2: 
+            return tuple((
+                self.p1.get_hidden_information(), 
+                self.p2.serialize(), 
+                tuple([
+                    (int(month.value), self.center_cards[month].serialize())
+                    for month in Month 
+                    if self.center_cards[month] != []
+                ]),
+                self.curr_player.number
+            ))    
+
+    def display_hidden_board(self, player_num):
+        if player_num == 1: 
+            hero = self.p1
+            villain = self.p2
+        else: 
+            hero = self.p2 
+            villain = self.p1
+
+        hero.sort()
+        villain.sort()
+
+        result = f"Current Player: {self.curr_player.number}\n\n"
+        result += f"Hero Num Go: {hero.num_go}\n"
+        result += f"Hero Score: {hero.score}\n"
+        result  += f"Hero Hand: {hero.hand}\n"
+        result += f"Hero Captured: {hero.captured}\n\n"
+
+        result += "centercards: \n"
+        for month, cards in self.center_cards.items(): 
+            result += f"\t{month.name}:"
+            for card in cards: 
+                result += f" {card}"
+            result += " \n"
+        result += "\n"
+        
+        result += f"Villain Num Go: {villain.num_go}\n"
+        result += f"Villain Score: {villain.score}\n"
+        result += f"Villain Captured: {villain.captured}\n"
+        return result
+
+
+
+

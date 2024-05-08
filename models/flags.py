@@ -5,15 +5,21 @@ class Flags:
         self.go = False 
         self.select_match = False 
     
-    def serialize(self) -> dict:
+    def serialize(self) -> tuple:
 
-        return self.__dict__
+        return tuple((
+            self.go,
+            self.select_match
+        ))
 
     @staticmethod
-    def deserialize(data: dict):
+    def deserialize(data: tuple):
 
+        go = bool(data[0])
+        select_match = bool(data[1])
         flags = Flags()
-        flags.__dict__ = data
+        flags.go = go 
+        flags.select_match = select_match
 
         return flags
         

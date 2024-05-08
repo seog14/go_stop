@@ -29,31 +29,30 @@ class Action(ABC):
 
     @staticmethod
     def deserialize(serialized_action: dict): 
-        kind = serialized_action[0][1]
-
+        kind = serialized_action[0]
         if kind == "throw": 
-            card = serialized_action[1][1]
+            card = serialized_action[1]
             return ActionThrow(card=Card.deserialize(card))
         
         if kind == "select match": 
-            og_card = serialized_action[1][1]
-            match = serialized_action[2][1]
+            og_card = serialized_action[1]
+            match = serialized_action[2]
             return ActionSelectMatch(og_card=Card.deserialize(og_card),
                                      match=Card.deserialize(match))
         
         if kind == "select matches": 
-            og_cards = CardList.deserialize(serialized_action[1][1])
-            matches = CardList.deserialize(serialized_action[2][1])
+            og_cards = CardList.deserialize(serialized_action[1])
+            matches = CardList.deserialize(serialized_action[2])
             # Change Cardlist to tuple 
             return ActionSelectMatches(og_cards=tuple(og_cards),
                                        matches=tuple(matches)) 
         
         if kind == "go": 
-            option = bool(serialized_action[1][1])
+            option = bool(serialized_action[1])
             return ActionGo(option=option)
 
         if kind == "flip": 
-            card = serialized_action[1][1]
+            card = serialized_action[1]
             return ActionFlip(card=Card.deserialize(card))
         
 class ActionThrow(Action):
@@ -64,8 +63,8 @@ class ActionThrow(Action):
 
     def serialize(self): 
         return tuple([
-            ("kind", self.kind),
-            ("card", self.card.serialize())
+            self.kind,
+            self.card.serialize()
         ])
 
 # One Match List
@@ -78,9 +77,9 @@ class ActionSelectMatch(Action):
 
     def serialize(self): 
         return tuple([
-            ("kind", self.kind), 
-            ("og_card", self.og_card.serialize()),
-            ("match", self.match.serialize())
+            self.kind, 
+            self.og_card.serialize(),
+            self.match.serialize()
         ])
 
 # Two Match Lists 
@@ -96,9 +95,9 @@ class ActionSelectMatches(Action):
         matches = CardList(self.matches)
         matches.sort()
         return tuple([
-            ("kind", self.kind), 
-            ("og_cards", tuple(og_cards.serialize())),
-            ("matches", tuple(matches.serialize()))
+            self.kind, 
+            tuple(og_cards.serialize()),
+            tuple(matches.serialize())
         ])
 
 class ActionGo(Action): 
@@ -109,8 +108,8 @@ class ActionGo(Action):
     
     def serialize(self): 
         return tuple([
-            ("kind", self.kind), 
-            ("option", self.option)
+            self.kind, 
+            self.option
         ])
     
 class ActionFlip(Action):
@@ -120,6 +119,6 @@ class ActionFlip(Action):
     
     def serialize(self): 
         return tuple([
-            ("kind", self.kind), 
-            ("card", self.card.serialize())
+            self.kind, 
+            self.card.serialize()
         ])
